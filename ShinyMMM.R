@@ -53,6 +53,28 @@ ui <- shinyUI(
 
 server <- function(input, output){
   
+  #Para leer la funcion a optimizar
+  vector2 <- reactive({
+    if(input$Do){
+      vector2 <- as.numeric(unlist(strsplit(input$vec1,",")))
+      x <- as.Date(input$FechaInicio, "%d/%m/%Y")
+      weekIni <- format(x, "%V")
+      x <- as.Date(input$FechaFin, "%d/%m/%Y")
+      weekFin <- format(x, "%V")
+      
+      #Esto no funcionara para cuando haya una semana en un anio y otra en el anio siguiente. ***REVISAR***
+      weeks <- as.numeric(weekFin)-as.numeric(weekIni)
+      print(weeks)
+      #Ahora se sabe el numero de semanas por lo que al momento de la distrubicion lo dividira en las semanas correspondientes
+      vector2
+    }
+  })
+  
+  output$oid2<-renderPrint({
+    vector2()
+    
+  })
+  
 }
 
 shinyApp(ui, server)
