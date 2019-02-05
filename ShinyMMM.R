@@ -40,9 +40,8 @@ ui <- shinyUI(
                    actionButton('Do2', 'Run2')
                  ),
                  mainPanel(
+                   tags$h1("Resultados: "),
                    verbatimTextOutput("view"),
-                   verbatimTextOutput("oid2"),
-                   textOutput("algo"),
                    plotOutput('grafico')),
                  fluid = TRUE
                )
@@ -71,17 +70,10 @@ server <- function(input, output){
     }
   })
   
-  #Muestra los parametros de la funcion
-  
-  output$oid2<-renderPrint({
-    vector2()
-    
-  })
-  
   #Funcion para optimizar
   
   opt <- reactive({
-    if(input$Do2){
+    if(input$Do){
       
       library(Rsolnp)
       
@@ -93,6 +85,7 @@ server <- function(input, output){
       
       opt_func <- function(x) {
         isolate(vector2())[1] + isolate(vector2())[2]*x[1] + isolate(vector2())[3]*x[2] + isolate(vector2())[4]*x[3] + isolate(vector2())[5]*x[4] + isolate(vector2())[6]*x[5]
+        #770.296 + 353.166*x[1] + 45.382*x[2] + 48.751*x[3] + 87.643*x[4] + 216.672*x[5]
       }
       
       inequal <- function(x) {
@@ -124,8 +117,26 @@ server <- function(input, output){
                       ineqLB=Presupuesto/2,
                       ineqUB=Presupuesto,
                       LB=c(0.1,digitalmin,radiomin,tvmin,vpmin,prensamin), #lower bound for parameters i.e. greater than zero
-                      UB=c(0.1,digitalmax,radiomax,tvmin,vpmax,prensamax)) #upper bound for parameters (I just chose 100 randomly)
-      salida$pars
+                      UB=c(0.1,digitalmax,radiomax,tvmin,vpmax,prensamax),
+                      control = list(trace = 0)) #Para que no muestre el mensaje de error se pone trace = 0
+      Nombres <- c("Digital","Radio", "TV", "VP", "Prensa")
+      dataOpt <- data.frame(medio = c("Digital","Radio", "TV", "VP", "Prensa"), 
+                            valor = c(salida$pars[2],salida$pars[3],salida$pars[4],salida$pars[5],salida$pars[6]),
+                            camp = "Solucion")
+      print("Inversion propuesta")
+      print(dataOpt)
+      
+      Total <- 0
+      
+      for (i in 1:nrow(dataOpt)){
+        Total = Total + dataOpt$valor[i]
+      }
+      
+      Total
+      
+      dataOpt$valor <- round(((dataOpt$valor/Total)*100),2)
+      print("Share de inversion")
+      as.data.frame(dataOpt)
     }
   })
   
@@ -164,7 +175,7 @@ server <- function(input, output){
       
       dataf <- data.frame(medio = nombres, valor = t(Invmedios2))
       dataf$camp <- "Actual"
-      dataf$valor <- round(dataf$valor *100)
+      dataf$valor <- round((dataf$valor *100),2)
       dataf
       
       graf <- ggplot() + geom_bar(aes(y = valor, x = camp, fill = medio), data = dataf,
@@ -173,16 +184,18 @@ server <- function(input, output){
                                                label = paste0(valor,"%")), size=4)
       graf
       
+      Nuevo <- rbind(dataf, opt())
       
       library(plyr)
       library(reshape2)
       
-      dataf <- ddply(dataf, "camp", transform, pos = cumsum(valor)-0.5*valor)
+      #dataf <- ddply(dataf, "camp", transform, pos = cumsum(valor)-0.5*valor)
       
-      ggplot(data=dataf, aes(x=camp, y=valor, fill=medio)) + 
+      ggplot(data=Nuevo, aes(x=camp, y=valor, fill=medio)) + 
         geom_bar(stat="identity", position=position_stack()) +
         geom_text(aes(y = valor, ymax = valor, label = paste0(valor,"%")), 
                   position = position_stack(), size=3, vjust=1, hjust=0.5 ,col="white")
+      #candleChart(graf, name=input$Do)
       #graf
     }
     
