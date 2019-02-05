@@ -70,10 +70,70 @@ server <- function(input, output){
     }
   })
   
+  #Muestra los parametros de la funcion
+  
   output$oid2<-renderPrint({
     vector2()
     
   })
+  
+  #Funcion para optimizar
+  
+  opt <- reactive({
+    if(input$Do2){
+      
+      library(Rsolnp)
+      
+      #x[2] -> Digital
+      #x[3] -> Radio
+      #x[4] -> TV
+      #x[5] -> VP
+      #x[6] -> Prensa
+      
+      opt_func <- function(x) {
+        isolate(vector2())[1] + isolate(vector2())[2]*x[1] + isolate(vector2())[3]*x[2] + isolate(vector2())[4]*x[3] + isolate(vector2())[5]*x[4] + isolate(vector2())[6]*x[5]
+      }
+      
+      inequal <- function(x) {
+        x[2] + x[3] + x[4] + x[5] + x[6]
+      }
+      
+      Presupuesto <- input$Presupuestomax
+      
+      digitalmin <- input$digital[1]
+      digitalmax <- input$digital[2]
+      
+      radiomin <- input$radio[1]
+      radiomax <- input$radio[2]
+      
+      tvmin <- input$TV[1]
+      tvmax <- input$TV[2]
+      
+      vpmin <- input$vp[1]
+      vpmax <- input$vp[2]
+      
+      prensamin <- input$prensa[1]
+      prensamax <- input$prensa[2]
+      
+      salida <- solnp(c(1,1,1,1,1,1), #starting values (random - obviously need to be positive and sum to 15)
+                      opt_func, #function to optimise
+                      #eqfun=equal, #equality function 
+                      #eqB=Presupuesto,   #the equality constraint
+                      ineqfun=inequal,
+                      ineqLB=Presupuesto/2,
+                      ineqUB=Presupuesto,
+                      LB=c(0.1,digitalmin,radiomin,tvmin,vpmin,prensamin), #lower bound for parameters i.e. greater than zero
+                      UB=c(0.1,digitalmax,radiomax,tvmin,vpmax,prensamax)) #upper bound for parameters (I just chose 100 randomly)
+      salida$pars
+    }
+  })
+  
+  #Muestra la optimización en pantalla
+  
+  output$view <- renderPrint({
+    opt() 
+  })
+  
   
 }
 
