@@ -1,5 +1,6 @@
 library(shiny)
 library(readxl)
+library(sqldf)
 
 ui <- shinyUI(
   
@@ -134,7 +135,58 @@ server <- function(input, output){
     opt() 
   })
   
+  #Crea Staked Bar para mostrar el Mix actual
   
+  output$grafico <- renderPlot({
+    inFile <- input$file1
+    if(input$Do){
+      file.rename(inFile$datapath,
+                  paste(inFile$datapath, ".xlsx", sep=""))
+      db <- read_excel(paste(inFile$datapath, ".xlsx", sep=""), 1)
+      
+      Invmedios <- sqldf("Select sum(Digital) as Digital, sum(Radio) as Radio, sum(TV_Group) as TV, sum(VP_Group) as VP, sum(Prensa_Group) as Prensa from db")
+      
+      Totalmedios <- 0
+      
+      for(i in 1:ncol(Invmedios)){
+        Totalmedios <- Totalmedios + Invmedios[i]
+      }
+      
+      Invmedios2 <- Invmedios
+      
+      for(i in 1:ncol(Invmedios)){
+        Invmedios2[i] <- Invmedios[i]/Totalmedios
+      }
+      
+      library(ggplot2)
+      
+      nombres <- names(Invmedios2)
+      
+      dataf <- data.frame(medio = nombres, valor = t(Invmedios2))
+      dataf$camp <- "Actual"
+      dataf$valor <- round(dataf$valor *100)
+      dataf
+      
+      graf <- ggplot() + geom_bar(aes(y = valor, x = camp, fill = medio), data = dataf,
+                                  stat="identity")
+      graf <- graf + geom_text(data=dataf, aes(x = camp, y = valor,
+                                               label = paste0(valor,"%")), size=4)
+      graf
+      
+      
+      library(plyr)
+      library(reshape2)
+      
+      dataf <- ddply(dataf, "camp", transform, pos = cumsum(valor)-0.5*valor)
+      
+      ggplot(data=dataf, aes(x=camp, y=valor, fill=medio)) + 
+        geom_bar(stat="identity", position=position_stack()) +
+        geom_text(aes(y = valor, ymax = valor, label = paste0(valor,"%")), 
+                  position = position_stack(), size=3, vjust=1, hjust=0.5 ,col="white")
+      #graf
+    }
+    
+  })
 }
 
 shinyApp(ui, server)
