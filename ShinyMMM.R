@@ -123,25 +123,30 @@ server <- function(input, output){
       dataOpt <- data.frame(medio = c("Digital","Radio", "TV", "VP", "Prensa"), 
                             valor = c(salida$pars[2],salida$pars[3],salida$pars[4],salida$pars[5],salida$pars[6]),
                             camp = "Solucion")
-      print("Inversion propuesta")
-      print(dataOpt)
       
-      Total <- 0
-      
-      for (i in 1:nrow(dataOpt)){
-        Total = Total + dataOpt$valor[i]
-      }
-      
-      Total
-      
-      dataOpt$valor <- round(((dataOpt$valor/Total)*100),2)
-      print("Share de inversion")
-      as.data.frame(dataOpt)
+      dataOpt
     }
   })
   
-  #Muestra la optimización en pantalla
+  #Calcula el share de inversion
+  share <- reactive({
+    dataOpt <- opt()
+    
+    Total <- 0
+    
+    for (i in 1:nrow(dataOpt)){
+      Total = Total + dataOpt$valor[i]
+    }
+    
+    Total
+    
+    dataOpt$valor <- round(((dataOpt$valor/Total)*100),2)
+    print("Share de inversion")
+    dataOpt
+  })
   
+  
+  #Muestra la optimización en pantalla
   output$view <- renderPrint({
     opt() 
   })
@@ -184,7 +189,7 @@ server <- function(input, output){
                                                label = paste0(valor,"%")), size=4)
       graf
       
-      Nuevo <- rbind(dataf, opt())
+      Nuevo <- rbind(dataf, share())
       
       library(plyr)
       library(reshape2)
