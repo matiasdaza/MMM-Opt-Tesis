@@ -13,7 +13,6 @@ ui <- shinyUI(
                  sidebarPanel(
                    fileInput('file1', 'Seleccione un archivo xlsx', accept = c(".xlsx")),
                    textInput('vec1', 'Ingrese los betas de la funcion (separados por coma)', "770.296, 353.166, 45.382, 48.751, 87.643, 216.672"),
-                   numericInput("Presupuestomin", "Presupuesto min (en millones):", 1),
                    numericInput("Presupuestomax", "Presupuesto maximo(en millones):", 1),
                    sliderInput("digital", "Rango de inversion en Digital:",
                                min = 1, max = 100,
@@ -28,7 +27,7 @@ ui <- shinyUI(
                                min = 1, max = 100,
                                value = c(20,50)),
                    sliderInput("prensa", "Rango de inversion en Prensa:",
-                               min = 1, max = 1000,
+                               min = 1, max = 100,
                                value = c(20,50)),
                    dateInput("FechaInicio", "Fecha de Inicio:", value = NULL, min = NULL, max = NULL,
                              format = "yyyy-mm-dd", startview = "month", weekstart = 0,
@@ -77,12 +76,6 @@ server <- function(input, output){
       
       library(Rsolnp)
       
-      #x[2] -> Digital
-      #x[3] -> Radio
-      #x[4] -> TV
-      #x[5] -> VP
-      #x[6] -> Prensa
-      
       opt_func <- function(x) {
         isolate(vector2())[1] + isolate(vector2())[2]*x[1] + isolate(vector2())[3]*x[2] + isolate(vector2())[4]*x[3] + isolate(vector2())[5]*x[4] + isolate(vector2())[6]*x[5]
         #770.296 + 353.166*x[1] + 45.382*x[2] + 48.751*x[3] + 87.643*x[4] + 216.672*x[5]
@@ -109,16 +102,30 @@ server <- function(input, output){
       prensamin <- input$prensa[1]
       prensamax <- input$prensa[2]
       
+      LB=c(0.1,digitalmin,radiomin,tvmin,vpmin,prensamin) #lower bound for parameters i.e. greater than zero
+      UB=c(0.1,digitalmax,radiomax,tvmin,vpmax,prensamax)
+      
+      Min = digitalmin+radiomin+tvmin+vpmin+prensamin
+      print("Presupuesto minimo")
+      print(Min)
+      print("Presupuesto maximo")
+      print(Presupuesto)
+      
       salida <- solnp(c(1,1,1,1,1,1), #starting values (random - obviously need to be positive and sum to 15)
                       opt_func, #function to optimise
                       #eqfun=equal, #equality function 
                       #eqB=Presupuesto,   #the equality constraint
                       ineqfun=inequal,
-                      ineqLB=Presupuesto/2,
+                      ineqLB=Min,
                       ineqUB=Presupuesto,
                       LB=c(0.1,digitalmin,radiomin,tvmin,vpmin,prensamin), #lower bound for parameters i.e. greater than zero
                       UB=c(0.1,digitalmax,radiomax,tvmin,vpmax,prensamax),
                       control = list(trace = 0)) #Para que no muestre el mensaje de error se pone trace = 0
+      
+      
+      print(LB)
+      print(UB)
+      
       Nombres <- c("Digital","Radio", "TV", "VP", "Prensa")
       dataOpt <- data.frame(medio = c("Digital","Radio", "TV", "VP", "Prensa"), 
                             valor = c(salida$pars[2],salida$pars[3],salida$pars[4],salida$pars[5],salida$pars[6]),
