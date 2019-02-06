@@ -199,9 +199,10 @@ server <- function(input, output){
       ggplot(data=Nuevo, aes(x=camp, y=valor, fill=medio)) + 
         geom_bar(stat="identity", position=position_stack()) +
         geom_text(aes(y = valor, ymax = valor, label = paste0(valor,"%")), 
-                  position = position_stack(), size=3, vjust=1, hjust=0.5 ,col="white")
-      #candleChart(graf, name=input$Do)
-      #graf
+                  position = position_stack(), size=3, vjust=1, hjust=0.5 ,col="white")+
+        xlab("Campana") + ylab("% de Inversion") +
+        ggtitle("Comparativo de inversion")+
+        theme(plot.title = element_text(size = 25, hjust = 0.5))
     }
     
   })
